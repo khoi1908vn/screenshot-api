@@ -40,5 +40,5 @@ async def image():
 import requests, os
 if __name__ == '__main__':
     ip = requests.get('https://ipv4.icanhazip.com').text.strip()
-    app.run()
+    app.run(host = '0.0.0.0', port=8080)
 
