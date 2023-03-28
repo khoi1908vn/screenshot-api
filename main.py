@@ -37,7 +37,7 @@ async def image(request):
         return web.Response(text=f'Error: {e}', status=500)
 
 # Example on a request
-async def get_screenshot(api_url, token, url, resolution, delay=7):
+async def examplerequest(api_url, token, url, resolution, delay=7):
     params = {'url': url, 'resolution': resolution, 'delay': delay, 'authorization': token}
     async with ClientSession() as session:
         async with session.get(api_url, params=params) as response:
