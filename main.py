@@ -5,10 +5,9 @@ from aiohttp import web, ClientSession
 
 
 async def get_screenshot(url, resolution: int = 720, delay: int = 0):
-    global chromium_path
     window_height = int(resolution*16/9)
     window_width = resolution
-    browser = await launch(executablePath = chromium_path, headless=True, args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--window-position=0,0', '--enable-features=WebContentsForceDark'], handleSIGINT=False, handleSIGTERM=False, handleSIGHUP=False)
+    browser = await launch(executablePath = subprocess.check_output(['which', 'chromium']).strip().decode('utf-8'), headless=True, args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--window-position=0,0', '--enable-features=WebContentsForceDark'], handleSIGINT=False, handleSIGTERM=False, handleSIGHUP=False)
     page = await browser.newPage()
     await page.setViewport({'width': window_width, 'height': window_height})
     await page._client.send('Page.setDownloadBehavior', {'behavior': 'allow', 'downloadPath': '/dev/null'})
@@ -51,7 +50,5 @@ app = web.Application()
 app.add_routes(routes)
 
 if __name__ == '__main__':
-    global chromium_path
     ip = requests.get('https://ipv4.icanhazip.com').text.strip()
     web.run_app(app, host='0.0.0.0', port=8000)
-    chromium_path = subprocess.check_output(['which', 'chromium']).strip().decode('utf-8')
