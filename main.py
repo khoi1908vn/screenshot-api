@@ -1,44 +1,43 @@
 
 from pyppeteer import launch
-import asyncio
-
-
-async def get_screenshot(url, resolution: int, delay: int = 7):
+import asyncio,os, requests
+from aiohttp import web
+async def get_screenshot(url, resolution: int = 720, delay: int = 0):
     window_height = int(resolution*16/9)
     window_width = resolution
-    async with launch(headless=True, args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--window-position=0,0', '--enable-features=WebContentsForceDark']) as browser:
-        async with browser.newPage() as page:
-            await page.setViewport({'width': window_width, 'height': window_height})
-            await page._client.send('Page.setDownloadBehavior', {'behavior': 'allow', 'downloadPath': '/dev/null'})
-            await page.goto(url)
-            await page.waitForNavigation()
-            await asyncio.sleep(3 + delay)
-            elements = await page.Jx(f"//*[contains(text(), '{ip}')]")
-            for element in elements:
-                await page.evaluate("(element) => element.innerText = '<the host ip address>'", element)
-            image_bytes = await page.screenshot()
+    browser = await launch(headless=True, args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--window-position=0,0', '--enable-features=WebContentsForceDark'], handleSIGINT=False, handleSIGTERM=False, handleSIGHUP=False)
+    page = await browser.newPage()
+    await page.setViewport({'width': window_width, 'height': window_height})
+    await page._client.send('Page.setDownloadBehavior', {'behavior': 'allow', 'downloadPath': '/dev/null'})
+    await page.goto(url)
+    await page.waitForNavigation()
+    await asyncio.sleep(3 + delay)
+    elements = await page.Jx(f"//*[contains(text(), '{ip}')]")
+    for element in elements:
+        await page.evaluate("(element) => element.innerText = '<the host ip address>'", element)
+    image_bytes = await page.screenshot()
+    await browser.close()
     return image_bytes
 
-from flask import Flask, request, Response
-app = Flask(__name__)
-@app.route('/image')
-async def image():
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or auth_header.split()[0].lower() != 'bearer' or not (lambda key: key in list(os.environ.get("allowed-keys", [])))(auth_header.split()[1]):
-        return Response('Invalid token', 401)
-    url = request.args.get('url')
-    resolution = int(request.args.get('resolution'))
-    delay = int(request.args.get('delay', 7))
-    try:
-        image_binary = await get_screenshot(url, resolution, delay)
-        response = Response(image_binary)
-        response.headers.set('Content-Type', 'image/png')
-        return response
-    except Exception as e:
-        return Response(f'Error: {e}', 500)
+routes = web.RouteTableDef()
 
-import requests, os
+@routes.get('/image')
+async def image(request):
+    try:
+        auth_header = request.query.get('authorization')
+        if not auth_header or not (lambda key: key in list(os.environ.get("allowed-keys", ['testkey_'])))(auth_header):
+            return web.Response(text='Invalid token', status=401)
+        url = request.query.get('url')
+        resolution = int(request.query.get('resolution', 720))
+        delay = int(request.query.get('delay', 7))
+        image_binary = await get_screenshot(url, resolution, delay)
+        return web.Response(body=image_binary, content_type='image/png')
+    except Exception as e:
+        return web.Response(text=f'Error: {e}', status=500)
+
+app = web.Application()
+app.add_routes(routes)
+
 if __name__ == '__main__':
     ip = requests.get('https://ipv4.icanhazip.com').text.strip()
-    app.run(host = '0.0.0.0', port=8080)
-
+    web.run_app(app, host='0.0.0.0', port=8080)
