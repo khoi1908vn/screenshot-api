@@ -25,7 +25,7 @@ routes = web.RouteTableDef()
 
 @routes.get('/image')
 async def image(request):
-    try:
+    #try:
         auth_header = request.query.get('authorization')
         if not auth_header or not (lambda key: key in list(os.environ.get("allowed-keys", ['testkey_'])))(auth_header):
             return web.Response(text='Invalid token', status=401)
@@ -34,8 +34,8 @@ async def image(request):
         delay = int(request.query.get('delay', 7))
         image_binary = await get_screenshot(url, resolution, delay)
         return web.Response(body=image_binary, content_type='image/png')
-    except Exception as e:
-        return web.Response(text=f'Error: {e}', status=500)
+    #except Exception as e:
+     #   return web.Response(text=f'Error: {e}', status=500)
 
 # Example on a request
 async def examplerequest(api_url, token, url, resolution, delay=7):
