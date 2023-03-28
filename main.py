@@ -1,7 +1,8 @@
 
 from pyppeteer import launch
 import asyncio,os, requests
-from aiohttp import web
+from aiohttp import web, ClientSession
+
 async def get_screenshot(url, resolution: int = 720, delay: int = 0):
     window_height = int(resolution*16/9)
     window_width = resolution
@@ -35,9 +36,18 @@ async def image(request):
     except Exception as e:
         return web.Response(text=f'Error: {e}', status=500)
 
+# Example on a request
+async def get_screenshot(api_url, token, url, resolution, delay=7):
+    params = {'url': url, 'resolution': resolution, 'delay': delay, 'authorization': token}
+    async with ClientSession() as session:
+        async with session.get(api_url, params=params) as response:
+            response.raise_for_status()
+            image_data = await response.read()
+    return image_data
+
 app = web.Application()
 app.add_routes(routes)
 
 if __name__ == '__main__':
     ip = requests.get('https://ipv4.icanhazip.com').text.strip()
-    web.run_app(app, host='0.0.0.0', port=8080)
+    web.run_app(app, host='0.0.0.0', port=8000)
