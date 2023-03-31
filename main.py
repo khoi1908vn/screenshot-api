@@ -26,7 +26,7 @@ routes = web.RouteTableDef()
 @routes.get('/image')
 async def image(request):
     #try:
-        auth_header = request.query.get('authorization')
+        auth_header = request.headers.get('authorization')
         if not auth_header or not (lambda key: key in list(os.environ.get("allowed-keys", ['testkey_'])))(auth_header):
             return web.Response(text='Invalid token', status=401)
         url = request.query.get('url')
