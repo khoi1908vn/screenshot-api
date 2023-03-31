@@ -41,7 +41,7 @@ async def image(request):
         if not auth_header:
             return web.Response(text='Missing authorization', status = 400)
         if auth_header not in list(os.environ.get("allowed-keys", ['testkey_'])):
-            return web.Response(text='Invalid token', status=401)
+            return web.Response(text=f'Invalid token, given {auth_header}', status=401)
         url = request.query.get('url')
         resolution = int(request.query.get('resolution', 720))
         delay = int(request.query.get('delay', 7))
