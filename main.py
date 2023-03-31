@@ -1,13 +1,14 @@
-import asyncio,os, requests
-from aiohttp import web, ClientSession
-
-
+import os, requests, time
+from flask import Flask, request, Response
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium import webdriver
-async def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
+
+app = Flask(__name__)
+
+def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
     global ip
     window_height = int(resolution*16/9)
     window_width = resolution
@@ -22,49 +23,34 @@ async def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
         "plugins.always_open_pdf_externally": False
     }
     options.add_experimental_option("prefs", prefs)
-    async with webdriver.Chrome(options=options) as driver:
-        await driver.get(url)
+    with webdriver.Chrome(options=options) as driver:
+        driver.get(url)
         wait = WebDriverWait(driver, 10)
         wait.until(EC.presence_of_element_located((By.XPATH, "//body[not(@class='loading')]")))
-        await asyncio.sleep(3 + delay)
+        time.sleep(3 + delay)
         if ip:
             elements = driver.find_elements(By.XPATH, f"//*[contains(text(), '{ip}')]")
             for element in elements:
                 driver.execute_script("arguments[0].innerText = arguments[1];", element, '<the host ip address>')
-        screenshot_bytes = await driver.get_screenshot_as_png()
+        screenshot_bytes = driver.get_screenshot_as_png()
     return screenshot_bytes
 
-routes = web.RouteTableDef()
-
-@routes.get('/image')
-async def image(request):
-    #try:
+@app.route('/image')
+def image():
+    try:
         auth_header = request.headers.get('authorization')
-        # if (not auth_header) or (not (lambda key: key in list(os.environ.get("allowed-keys", ['testkey_'])))(auth_header)):
         if not auth_header:
-            return web.Response(text='Missing authorization', status = 400)
+            return Response('Missing authorization', status=400)
         if auth_header != os.environ.get('allowed_key', 'testkey_'):
-            return web.Response(text=f'Invalid token, given {auth_header}', status=401)
-        url = request.query.get('url')
-        resolution = int(request.query.get('resolution', 720))
-        delay = int(request.query.get('delay', 7))
-        image_binary = await get_screenshot(url, resolution, delay)
-        return web.Response(body=image_binary, content_type='image/png')
-    #except Exception as e:
-     #   return web.Response(text=f'Error: {e}', status=500)
-
-# Example on a request
-async def examplerequest(api_url, token, url, resolution, delay=7):
-    params = {'url': url, 'resolution': resolution, 'delay': delay, 'authorization': token}
-    async with ClientSession() as session:
-        async with session.get(api_url, params=params) as response:
-            response.raise_for_status()
-            image_data = await response.read()
-    return image_data
-
-app = web.Application()
-app.add_routes(routes)
+            return Response(f'Invalid token, given {auth_header}', status=401)
+        url = request.args.get('url')
+        resolution = int(request.args.get('resolution', 720))
+        delay = int(request.args.get('delay', 7))
+        image_binary = get_screenshot(url, resolution, delay)
+        return Response(image_binary, content_type='image/png')
+    except Exception as e:
+        return Response(f'Error: {e}', status=500)
 
 if __name__ == '__main__':
     ip = requests.get('https://ipv4.icanhazip.com').text.strip()
-    web.run_app(app, host='0.0.0.0', port=8000)
+    app.run(host='0.0.0.0', port=8000)
