@@ -5,10 +5,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium import webdriver
-
+ratelimit = 0
 app = Flask(__name__)
 
 def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
+    ratelimit += 1
     global ip
     window_height = int(resolution*16/9)
     window_width = resolution
@@ -33,6 +34,7 @@ def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
             for element in elements:
                 driver.execute_script("arguments[0].innerText = arguments[1];", element, '<the host ip address>')
         screenshot_bytes = driver.get_screenshot_as_png()
+    ratelimit += -1
     return screenshot_bytes
 
 @app.route('/image')
@@ -43,6 +45,8 @@ def image():
             return Response('Missing authorization', status=400)
         if auth_header != os.environ.get('allowed_key', 'testkey_'):
             return Response(f'Invalid token, given {auth_header}', status=401)
+        if ratelimit > 2:
+            return Response("Gloal-Ratelimited", status=429)
         url = request.args.get('url')
         resolution = int(request.args.get('resolution', 720))
         delay = int(request.args.get('delay', 7))
@@ -54,3 +58,4 @@ def image():
 if __name__ == '__main__':
     ip = requests.get('https://ipv4.icanhazip.com').text.strip()
     app.run(host='0.0.0.0', port=8000)
+    ratelimit = 0
