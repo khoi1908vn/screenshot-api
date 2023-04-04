@@ -37,6 +37,9 @@ def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
     ratelimit += -1
     return screenshot_bytes
 
+@app.get('/')
+def root():
+    return 'Hello there'
 @app.route('/image')
 def image():
     try:
