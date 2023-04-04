@@ -9,6 +9,7 @@ ratelimit = 0
 app = Flask(__name__)
 
 def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
+    global ratelimit
     ratelimit += 1
     global ip
     window_height = int(resolution*16/9)
@@ -61,5 +62,5 @@ def image():
 
 if __name__ == '__main__':
     ip = requests.get('https://ipv4.icanhazip.com').text.strip()
-    app.run(host='0.0.0.0', port=8000)
     ratelimit = 0
+    app.run(host='0.0.0.0', port=8000)
