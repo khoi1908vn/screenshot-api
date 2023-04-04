@@ -53,6 +53,7 @@ def image():
         image_binary = get_screenshot(url, resolution, delay)
         return Response(image_binary, content_type='image/png')
     except Exception as e:
+        print(e)
         return Response(f'Error: {e}', status=500)
 
 if __name__ == '__main__':
