@@ -1,17 +1,18 @@
-import os, requests, time
-from flask import Flask, request, Response
+import os, time, requests
+from fastapi import FastAPI, Response
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium import webdriver
+
 ratelimit = 0
-app = Flask(__name__)
+app = FastAPI()
 
 def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
     global ratelimit
     ratelimit += 1
-    global ip
+    ip = requests.get('https://ipv4.icanhazip.com').text.strip()
     window_height = int(resolution*16/9)
     window_width = resolution
     options = Options()
@@ -41,26 +42,24 @@ def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
 @app.get('/')
 def root():
     return 'Hello there'
-@app.route('/image')
-def image():
+
+@app.get('/image')
+def image(url: str, resolution: int = 720, delay: int = 7, authorization: str = None):
     try:
-        auth_header = request.headers.get('authorization')
-        if not auth_header:
-            return Response('Missing authorization', status=400)
-        if auth_header != os.environ.get('allowed_key', 'testkey_'):
-            return Response(f'Invalid token, given {auth_header}', status=401)
+        global ratelimit
+        if not authorization:
+            return Response('Missing authorization', status_code=400)
+        if authorization != os.environ.get('allowed_key', 'testkey_'):
+            return Response(f'Invalid token, given {authorization}', status_code=401)
         if ratelimit > 2:
-            return Response("Gloal-Ratelimited", status=429)
-        url = request.args.get('url')
-        resolution = int(request.args.get('resolution', 720))
-        delay = int(request.args.get('delay', 7))
+            return Response("Gloal-Ratelimited", status_code=429)
         image_binary = get_screenshot(url, resolution, delay)
-        return Response(image_binary, content_type='image/png')
+        return Response(image_binary, media_type='image/png')
     except Exception as e:
         print(e)
-        return Response(f'Error: {e}', status=500)
+        return Response(f'Error: {e}', status_code=500)
 
 if __name__ == '__main__':
-    ip = requests.get('https://ipv4.icanhazip.com').text.strip()
+    
     ratelimit = 0
-    app.run(host='0.0.0.0', port=8000)
+
