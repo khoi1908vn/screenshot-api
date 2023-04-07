@@ -1,5 +1,5 @@
 import os, time, requests
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Header
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
@@ -44,7 +44,7 @@ def root():
     return 'Hello there'
 
 @app.get('/image')
-def image(url: str, resolution: int = 720, delay: int = 7, authorization: str = None):
+def image(resolution: int = 720, delay: int = 7, authorization: str = Header(None), url: str = Header(None)):
     try:
         global ratelimit
         if not authorization:
@@ -53,11 +53,14 @@ def image(url: str, resolution: int = 720, delay: int = 7, authorization: str = 
             return Response(f'Invalid token, given {authorization}', status_code=401)
         if ratelimit > 2:
             return Response("Gloal-Ratelimited", status_code=429)
+        if not url:
+            return Response('Missing URL in header', status_code=400)
         image_binary = get_screenshot(url, resolution, delay)
         return Response(image_binary, media_type='image/png')
     except Exception as e:
         print(e)
         return Response(f'Error: {e}', status_code=500)
+
 
 if __name__ == '__main__':
     
