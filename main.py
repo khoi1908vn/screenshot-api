@@ -61,8 +61,3 @@ def image(resolution: int = 720, delay: int = 7, authorization: str = Header(Non
         print(e)
         return Response(f'Error: {e}', status_code=500)
 
-
-if __name__ == '__main__':
-    
-    ratelimit = 0
-
