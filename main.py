@@ -56,6 +56,8 @@ def image(resolution: int = 720, delay: int = 7, authorization: str = Header(Non
         if not url:
             return Response('Missing URL in header', status_code=400)
         image_binary = get_screenshot(url, resolution, delay)
+        with open('log.txt', 'a+') as f:
+            f.write(str(int(time.time())) + ' ' + f'{url} | {resolution}p')
         return Response(image_binary, media_type='image/png')
     except Exception as e:
         print(e)
