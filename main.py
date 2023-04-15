@@ -5,7 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium import webdriver
-
+from time import time
 ratelimit = 0
 app = FastAPI()
 
@@ -26,6 +26,7 @@ def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
         "plugins.always_open_pdf_externally": False
     }
     options.add_experimental_option("prefs", prefs)
+    els = time()
     with webdriver.Chrome(options=options) as driver:
         driver.get(url)
         wait = WebDriverWait(driver, 10)
@@ -37,7 +38,8 @@ def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
                 driver.execute_script("arguments[0].innerText = arguments[1];", element, '<the host ip address>')
         screenshot_bytes = driver.get_screenshot_as_png()
     ratelimit += -1
-    return screenshot_bytes
+    elapsed = 1000*(time() - els) # in ms
+    return screenshot_bytes, round(elapsed)
 
 @app.get('/')
 def root():
@@ -55,10 +57,10 @@ def image(resolution: int = 720, delay: int = 7, authorization: str = Header(Non
             return Response("Gloal-Ratelimited", status_code=429)
         if not url:
             return Response('Missing URL in header', status_code=400)
-        image_binary = get_screenshot(url, resolution, delay)
+        image_binary, elapsed = get_screenshot(url, resolution, delay)
         with open('log.txt', 'a+') as f:
-            f.write(str(int(time.time())) + ' ' + f'{url} | {resolution}p')
-        return Response(image_binary, media_type='image/png')
+            f.write(str(int(time.time())) + ' ' + f'{url} | {resolution}p | {elapsed}ms')
+        return Response(image_binary, media_type='image/png', headers={"X-Elapsed-Time": str(elapsed)})
     except Exception as e:
         print(e)
         return Response(f'Error: {e}', status_code=500)
