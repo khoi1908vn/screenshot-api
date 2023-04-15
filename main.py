@@ -5,7 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium import webdriver
-from time import time
+from time import time, sleep
 ratelimit = 0
 app = FastAPI()
 
@@ -31,7 +31,7 @@ def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
         driver.get(url)
         wait = WebDriverWait(driver, 10)
         wait.until(EC.presence_of_element_located((By.XPATH, "//body[not(@class='loading')]")))
-        time.sleep(3 + delay)
+        sleep(3 + delay)
         if ip:
             elements = driver.find_elements(By.XPATH, f"//*[contains(text(), '{ip}')]")
             for element in elements:
