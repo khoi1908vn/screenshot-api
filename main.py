@@ -5,7 +5,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium import webdriver
-from time import time, sleep
 ratelimit = 0
 app = FastAPI()
 
@@ -26,19 +25,19 @@ def get_screenshot(url, resolution: int, delay: int = 7) -> bytes:
         "plugins.always_open_pdf_externally": False
     }
     options.add_experimental_option("prefs", prefs)
-    els = time()
+    els = time.time()
     with webdriver.Chrome(options=options) as driver:
         driver.get(url)
         wait = WebDriverWait(driver, 10)
         wait.until(EC.presence_of_element_located((By.XPATH, "//body[not(@class='loading')]")))
-        sleep(3 + delay)
+        time.sleep(3 + delay)
         if ip:
             elements = driver.find_elements(By.XPATH, f"//*[contains(text(), '{ip}')]")
             for element in elements:
                 driver.execute_script("arguments[0].innerText = arguments[1];", element, '<the host ip address>')
         screenshot_bytes = driver.get_screenshot_as_png()
     ratelimit += -1
-    elapsed = 1000*(time() - els) # in ms
+    elapsed = 1000*(time.time() - els) # in ms
     return screenshot_bytes, round(elapsed)
 
 @app.get('/')
