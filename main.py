@@ -1,6 +1,4 @@
-import os
-import time
-import requests
+import os, time, requests, asyncio
 from fastapi import FastAPI, Response, Header
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -9,7 +7,6 @@ from selenium.webdriver.common.by import By
 from selenium import webdriver
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
-
 app = FastAPI()
 
 class BrowserPool:
@@ -74,7 +71,7 @@ def root():
     return 'Hello there'
 
 @app.get('/image')
-def image(resolution: int = 720, delay: int = 7, authorization: str = Header(None), url: str = Header(None)):
+async def image(resolution: int = 720, delay: int = 7, authorization: str = Header(None), url: str = Header(None)):
     try:
         if not authorization:
             return Response('Missing authorization', status_code=400)
@@ -83,7 +80,8 @@ def image(resolution: int = 720, delay: int = 7, authorization: str = Header(Non
         if not url:
             return Response('Missing URL in header', status_code=400)
         browser = browser_pool.get_browser()
-        image_binary, elapsed = get_screenshot(browser, url, resolution, delay)
+        loop = asyncio.get_running_loop()
+        image_binary, elapsed = await loop.run_in_executor(None, get_screenshot, browser, url, resolution, delay)
         browser.execute_script("window.close()")
         browser_pool.release_browser(browser)
         with open('log.txt', 'a+') as f:
@@ -92,4 +90,5 @@ def image(resolution: int = 720, delay: int = 7, authorization: str = Header(Non
     except Exception as e:
         print(e)
         return Response(f'Error: {e}', status_code=500)
+
 
