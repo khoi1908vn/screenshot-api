@@ -56,7 +56,7 @@ def get_screenshot(browser, url, resolution: int, delay: int = 7) -> bytes:
     window_height = int(resolution*16/9)
     window_width = resolution
     els = time.time()
-    browser.set_window_size(window_width, window_height)
+    browser.set_window_size(window_height, window_width)
     browser.get(url)
     wait = WebDriverWait(browser, 10)
     wait.until(EC.presence_of_element_located((By.XPATH, "//body[not(@class='loading')]")))
