@@ -13,7 +13,7 @@ from threading import Lock
 app = FastAPI()
 
 class BrowserPool:
-    def __init__(self, pool_size=5):
+    def __init__(self, pool_size=3):
         self.pool_size = pool_size
         self.pool = []
         self.lock = Lock()
