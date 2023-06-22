@@ -85,7 +85,7 @@ async def image(resolution: int = 720, delay: int = 7, authorization: str = Head
         browser.execute_script("window.close()")
         browser_pool.release_browser(browser)
         with open('log.txt', 'a+') as f:
-            f.write(str(int(time.time())) + ' ' + f'{url} | {resolution}p | {elapsed}ms')
+            f.write(str(int(time.time())) + ' ' + f'{url} | {resolution}p | {elapsed}ms\n')
         return Response(image_binary, media_type='image/png', headers={"X-Elapsed-Time": str(elapsed)})
     except Exception as e:
         print(e)
